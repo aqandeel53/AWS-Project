@@ -68,13 +68,22 @@ A serverless REST API for managing a simple todo list application using AWS mana
 
 ### Endpoints
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/todos` | Get all todos |
-| GET | `/todos/{id}` | Get specific todo |
-| POST | `/todos` | Create new todo |
-| PUT | `/todos/{id}` | Update existing todo |
-| DELETE | `/todos/{id}` | Delete todo |
+| Method | Endpoint | Description | Lambda Function |
+|--------|----------|-------------|-----------------|
+| GET | `/todos` | Get all todos (with filtering) | `getTodos` |
+| GET | `/todos/{id}` | Get specific todo | `getTodos` |
+| POST | `/todos` | Create new todo | `createTodo` |
+| PUT | `/todos/{id}` | Update existing todo | `updateTodo` |
+| DELETE | `/todos/{id}` | Delete todo | `deleteTodo` |
+| GET | `/health` | Health check | `healthCheck` |
+| POST | `/todos/bulk` | Create multiple todos | `bulkOperations` |
+| DELETE | `/todos/bulk` | Delete multiple todos | `bulkOperations` |
+
+### Query Parameters (GET /todos)
+- `status` - Filter by status (pending, completed, archived)
+- `priority` - Filter by priority (low, medium, high)
+- `limit` - Limit number of results (default: 50, max: 100)
+- `lastEvaluatedKey` - For pagination
 
 ### Request/Response Examples
 
@@ -88,9 +97,135 @@ Request:
   "dueDate": "2024-12-31"
 }
 
-Response:
+Response (201 Created):
 {
   "id": "123e4567-e89b-12d3-a456-426614174000",
+  "title": "Learn AWS Lambda",
+  "description": "Complete serverless tutorial",
+  "priority": "high",
+  "dueDate": "2024-12-31",
+  "status": "pending",
+  "createdAt": "2024-05-29T10:30:00Z",
+  "updatedAt": "2024-05-29T10:30:00Z"
+}
+```
+
+#### Get All Todos (GET /todos)
+```json
+Response (200 OK):
+{
+  "todos": [
+    {
+      "id": "123e4567-e89b-12d3-a456-426614174000",
+      "title": "Learn AWS Lambda",
+      "description": "Complete serverless tutorial",
+      "priority": "high",
+      "dueDate": "2024-12-31",
+      "status": "pending",
+      "createdAt": "2024-05-29T10:30:00Z",
+      "updatedAt": "2024-05-29T10:30:00Z"
+    }
+  ],
+  "count": 1,
+  "lastEvaluatedKey": "encoded-pagination-key"
+}
+```
+
+#### Update Todo (PUT /todos/{id})
+```json
+Request:
+{
+  "status": "completed",
+  "description": "Tutorial completed successfully"
+}
+
+Response (200 OK):
+{
+  "id": "123e4567-e89b-12d3-a456-426614174000",
+  "title": "Learn AWS Lambda",
+  "description": "Tutorial completed successfully",
+  "priority": "high",
+  "dueDate": "2024-12-31",
+  "status": "completed",
+  "createdAt": "2024-05-29T10:30:00Z",
+  "updatedAt": "2024-05-30T15:45:00Z"
+}
+```
+
+#### Delete Todo (DELETE /todos/{id})
+```json
+Response (200 OK):
+{
+  "message": "Todo deleted successfully",
+  "deletedTodo": {
+    "id": "123e4567-e89b-12d3-a456-426614174000",
+    "title": "Learn AWS Lambda",
+    "description": "Tutorial completed successfully",
+    "priority": "high",
+    "dueDate": "2024-12-31",
+    "status": "completed",
+    "createdAt": "2024-05-29T10:30:00Z",
+    "updatedAt": "2024-05-30T15:45:00Z"
+  }
+}
+```
+
+#### Bulk Create (POST /todos/bulk)
+```json
+Request:
+{
+  "todos": [
+    {
+      "title": "Task 1",
+      "priority": "high"
+    },
+    {
+      "title": "Task 2",
+      "priority": "medium"
+    }
+  ]
+}
+
+Response (201 Created):
+{
+  "created": [
+    {
+      "id": "uuid-1",
+      "title": "Task 1",
+      "priority": "high",
+      "status": "pending",
+      "createdAt": "2024-05-30T10:00:00Z",
+      "updatedAt": "2024-05-30T10:00:00Z"
+    },
+    {
+      "id": "uuid-2",
+      "title": "Task 2",
+      "priority": "medium",
+      "status": "pending",
+      "createdAt": "2024-05-30T10:00:00Z",
+      "updatedAt": "2024-05-30T10:00:00Z"
+    }
+  ],
+  "errors": [],
+  "summary": {
+    "total": 2,
+    "created": 2,
+    "failed": 0
+  }
+}
+```
+
+#### Health Check (GET /health)
+```json
+Response (200 OK):
+{
+  "status": "healthy",
+  "timestamp": "2024-05-30T10:00:00Z",
+  "service": "Serverless Todo API",
+  "version": "1.0.0",
+  "database": "connected"
+}
+```b-12d3-a456-426614174000",
   "title": "Learn AWS Lambda",
   "description": "Complete serverless tutorial",
   "priority": "high",
@@ -339,6 +474,6 @@ Response:
 
 ---
 
-**Project Author**: Ahmed Mahmoud Ragab Qandeel   
+**Project Author**: Ahmed Mahmoud Ragab Qandeel  
 **AWS Certification**: Solutions Architect Associate  
 **Project Type**: Serverless REST API Demo
