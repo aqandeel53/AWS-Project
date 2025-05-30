@@ -60,44 +60,6 @@ A serverless REST API for managing a simple todo list application using AWS mana
    - Performance metrics
    - Error tracking and alerting
 
-## Project Structure
-
-```
-serverless-todo-api/
-├── README.md
-├── architecture/
-│   ├── architecture-diagram.png
-│   └── component-overview.md
-├── infrastructure/
-│   ├── cloudformation/
-│   │   ├── main-stack.yaml
-│   │   ├── dynamodb-stack.yaml
-│   │   ├── lambda-stack.yaml
-│   │   └── api-gateway-stack.yaml
-│   └── terraform/ (alternative)
-├── lambda-functions/
-│   ├── create-todo/
-│   │   ├── index.js
-│   │   ├── package.json
-│   │   └── README.md
-│   ├── get-todos/
-│   ├── update-todo/
-│   ├── delete-todo/
-│   └── shared/
-│       └── utils.js
-├── frontend/
-│   ├── index.html
-│   ├── app.js
-│   ├── styles.css
-│   └── config.js
-├── tests/
-│   ├── unit/
-│   └── integration/
-└── docs/
-    ├── api-documentation.md
-    ├── deployment-guide.md
-    └── security-considerations.md
-```
 
 ## API Endpoints
 
