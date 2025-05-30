@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Serverless Todo App</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+            width: 100%;
+            max-width: 800px;
+            min-height: 600px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            color: #333;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 1.1em;
+        }
+
+        .api-status {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 30px;
+            padding: 15px;
+            border-radius: 10px;
+            font-weight: 500;
+        }
+
+        .api-status.connected {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .api-status.disconnected {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        .status-dot.green {
+            background: #28a745;
+        }
+
+        .status-dot.red {
+            background: #dc3545;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        .todo-form {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            border: 2px solid #e9ecef;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .todo-list {
+            margin-top: 30px;
+        }
+
+        .todo-item {
+            background: white;
+            border: 2px solid #e9ecef;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 15px;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .todo-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .todo-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 10px;
+        }
+
+        .todo-title {
+            font-size: 1.3em;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .todo-priority {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8em;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .priority-high {
+            background: #fee;
+            color: #c53030;
+        }
+
+        .priority-medium {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .priority-low {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+
+        .todo-description {
+            color: #666;
+            margin-bottom: 15px;
+            line-height: 1.5;
+        }
+
+        .todo-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.9em;
+            color: #888;
+        }
+
+        .todo-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-small {
+            padding: 6px 15px;
+            font-size: 14px;
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #51cf66, #40c057);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #666;
+        }
+
+        .empty-state h3 {
+            font-size: 1.5em;
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error-message {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            border: 1px solid #f5c6cb;
+        }
+
+        .success-message {
+            background: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            border: 1px solid #c3e6cb;
+        }
+
+        @media (max-width: 768px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+            
+            .todo-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+            
+            .todo-meta {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+            
+            .todo-actions {
+                flex-wrap: wrap;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📝 Serverless Todo App</h1>
+            <p>Built with AWS Lambda, API Gateway, and DynamoDB</p>
+        </div>
+
+        <div id="apiStatus" class="api-status disconnected">
+            <div class="status-dot red"></div>
+            <span>Connecting to API...</span>
+        </div>
+
+        <div class="todo-form">
+            <h3 style="margin-bottom: 20px; color: #333;">Add New Todo</h3>
+            <form id="todoForm">
+                <div class="form-group">
+                    <label for="title">Title *</label>
+                    <input type="text" id="title" name="title" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="description">Description</label>
+                    <textarea id="description" name="description" placeholder="Add more details about your todo..."></textarea>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="priority">Priority</label>
+                        <select id="priority" name="priority">
+                            <option value="low">Low</option>
+                            <option value="medium" selected>Medium</option>
+                            <option value="high">High</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="dueDate">Due Date</label>
+                        <input type="date" id="dueDate" name="dueDate">
+                    </div>
+                </div>
+                
+                <button type="submit" class="btn" id="submitBtn">
+                    Add Todo
+                </button>
+            </form>
+        </div>
+
+        <div id="messages"></div>
+
+        <div class="todo-list">
+            <h3 style="margin-bottom: 20px; color: #333;">Your Todos</h3>
+            <div id="todoContainer">
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p>Loading todos...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuration - Replace with your actual API Gateway URL
+        const API_BASE_URL = 'https://your-api-id.execute-api.region.amazonaws.com/prod';
+        
+        // Global state
+        let todos = [];
+        let isLoading = false;
+
+        // DOM Elements
+        const todoForm = document.getElementById('todoForm');
+        const todoContainer = document.getElementById('todoContainer');
+        const apiStatus = document.getElementById('apiStatus');
+        const messagesContainer = document.getElementById('messages');
+        const submitBtn = document.getElementById('submitBtn');
+
+        // Initialize app
+        document.addEventListener('DOMContentLoaded', function() {
+            checkApiConnection();
+            loadTodos();
+            
+            todoForm.addEventListener('submit', handleFormSubmit);
+        });
+
+        // Check API connection
+        async function checkApiConnection() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/todos`);
+                if (response.ok) {
+                    updateApiStatus(true);
+                } else {
+                    updateApiStatus(false);
+                }
+            } catch (error) {
+                console.error('API connection failed:', error);
+                updateApiStatus(false);
+            }
+        }
+
+        // Update API status indicator
+        function updateApiStatus(connected) {
+            const statusDot = apiStatus.querySelector('.status-dot');
+            const statusText = apiStatus.querySelector('span');
+            
+            if (connected) {
+                apiStatus.className = 'api-status connected';
+                statusDot.className = 'status-dot green';
+                statusText.textContent = 'Connected to API';
+            } else {
+                apiStatus.className = 'api-status disconnected';
+                statusDot.className = 'status-dot red';
+                statusText.textContent = 'API Connection Failed - Demo Mode';
+            }
+        }
+
+        // Show message
+        function showMessage(message, type = 'info') {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = type === 'error' ? 'error-message' : 'success-message';
+            messageDiv.textContent = message;
+            
+            messagesContainer.appendChild(messageDiv);
+            
+            setTimeout(() => {
+                messageDiv.remove();
+            }, 5000);
+        }
+
+        // Handle form submission
+        async function handleFormSubmit(event) {
+            event.preventDefault();
+            
+            if (isLoading) return;
+            
+            const formData = new FormData(todoForm);
+            const todoData = {
+                title: formData.get('title'),
+                description: formData.get('description'),
+                priority: formData.get('priority'),
+                dueDate: formData.get('dueDate') || null
+            };
+
+            try {
+                setLoading(true);
+                await createTodo(todoData);
+                todoForm.reset();
+                showMessage('Todo created successfully!', 'success');
+                await loadTodos();
+            } catch (error) {
+                console.error('Error creating todo:', error);
+                showMessage('Failed to create todo. Please try again.', 'error');
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        // Create todo
+        async function createTodo(todoData) {
+            // In demo mode, simulate API call
+            if (apiStatus.classList.contains('disconnected')) {
+                return new Promise((resolve) => {
+                    setTimeout(() => {
+                        const newTodo = {
+                            id: Date.now().toString(),
+                            ...todoData,
+                            status: 'pending',
+                            createdAt: new Date().toISOString(),
+                            updatedAt: new Date().toISOString()
+                        };
+                        todos.unshift(newTodo);
+                        resolve(newTodo);
+                    }, 1000);
+                });
+            }
+
+            const response = await fetch(`${API_BASE_URL}/todos`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(todoData)
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            return await response.json();
+        }
+
+        // Load todos
+        async function loadTodos() {
+            try {
+                setLoading(true);
+                
+                // In demo mode, use sample data
+                if (apiStatus.classList.contains('disconnected')) {
+                    todos = [
+                        {
+                            id: '1',
+                            title: 'Learn AWS Lambda',
+                            description: 'Complete the serverless tutorial and build a REST API',
+                            status: 'pending',
+                            priority: 'high',
+                            dueDate: '2024-12-31',
+                            createdAt: '2024-05-29T10:00:00Z',
+                            updatedAt: '2024-05-29T10:00:00Z'
+                        },
+                        {
+                            id: '2',
+                            title: 'Deploy to AWS',
+                            description: 'Use CloudFormation to deploy the application infrastructure',
+                            status: 'pending',
+                            priority: 'medium',
+                            dueDate: null,
+                            createdAt: '2024-05-29T09:00:00Z',
+                            updatedAt: '2024-05-29T09:00:00Z'
+                        }
+                    ];
+                    renderTodos();
+                    return;
+                }
+
+                const response = await fetch(`${API_BASE_URL}/todos`);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                todos = await response.json();
+                renderTodos();
+            } catch (error) {
+                console.error('Error loading todos:', error);
+                showMessage('Failed to load todos.', 'error');
+                renderEmptyState();
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        // Render todos
+        function renderTodos() {
+            if (todos.length === 0) {
+                renderEmptyState();
+                return;
+            }
+
+            const todoHTML = todos.map(todo => `
+                <div class="todo-item">
+                    <div class="todo-header">
+                        <div>
+                            <div class="todo-title">${escapeHtml(todo.title)}</div>
+                            <div class="todo-priority priority-${todo.priority}">${todo.priority}</div>
+                        </div>
+                    </div>
+                    
+                    ${todo.description ? `<div class="todo-description">${escapeHtml(todo.description)}</div>` : ''}
+                    
+                    <div class="todo-meta">
+                        <div>
+                            <strong>Status:</strong> ${todo.status}
+                            ${todo.dueDate ? `<br><strong>Due:</strong> ${formatDate(todo.dueDate)}` : ''}
+                        </div>
+                        <div class="todo-actions">
+                            <button class="btn btn-small btn-success" onclick="updateTodoStatus('${todo.id}', 'completed')">
+                                Complete
+                            </button>
+                            <button class="btn btn-small btn-danger" onclick="deleteTodo('${todo.id}')">
+                                Delete
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+
+            todoContainer.innerHTML = todoHTML;
+        }
+
+        // Render empty state
+        function renderEmptyState() {
+            todoContainer.innerHTML = `
+                <div class="empty-state">
+                    <h3>No todos yet!</h3>
+                    <p>Create your first todo using the form above.</p>
+                </div>
+            `;
+        }
+
+        // Update todo status
+        async function updateTodoStatus(id, status) {
+            try {
+                // In demo mode, update locally
+                if (apiStatus.classList.contains('disconnected')) {
+                    const todo = todos.find(t => t.id === id);
+                    if (todo) {
+                        todo.status = status;
+                        todo.updatedAt = new Date().toISOString();
+                        renderTodos();
+                        showMessage('Todo updated successfully!', 'success');
+                    }
+                    return;
+                }
+
+                const response = await fetch(`${API_BASE_URL}/todos/${id}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ status })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                showMessage('Todo updated successfully!', 'success');
+                await loadTodos();
+            } catch (error) {
+                console.error('Error updating todo:', error);
+                showMessage('Failed to update todo.', 'error');
+            }
+        }
+
+        // Delete todo
+        async function deleteTodo(id) {
+            if (!confirm('Are you sure you want to delete this todo?')) {
+                return;
+            }
+
+            try {
+                // In demo mode, delete locally
+                if (apiStatus.classList.contains('disconnected')) {
+                    todos = todos.filter(t => t.id !== id);
+                    renderTodos();
+                    showMessage('Todo deleted successfully!', 'success');
+                    return;
+                }
+
+                const response = await fetch(`${API_BASE_URL}/todos/${id}`, {
+                    method: 'DELETE'
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                showMessage('Todo deleted successfully!', 'success');
+                await loadTodos();
+            } catch (error) {
+                console.error('Error deleting todo:', error);
+                showMessage('Failed to delete todo.', 'error');
+            }
+        }
+
+        // Set loading state
+        function setLoading(loading) {
+            isLoading = loading;
+            submitBtn.disabled = loading;
+            submitBtn.textContent = loading ? 'Adding...' : 'Add Todo';
+        }
+
+        // Utility functions
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function formatDate(dateString) {
+            return new Date(dateString).toLocaleDateString();
+        }
+    </script>
+</body>
+</html>
