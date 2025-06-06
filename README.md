@@ -6,10 +6,8 @@ A serverless REST API for managing a simple todo list application using AWS mana
 
 ## Architecture Diagram
 
-```
 ![Blank diagram](https://github.com/user-attachments/assets/9818fc5f-06dc-4c14-9400-1d910746196f)
 
-```
 
 ## Solution Architecture
 
